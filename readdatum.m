@@ -28,12 +28,12 @@ function [ datum ] = readdatum( in )
 			%int32/bool
             case 0
 				%read num
-				[value ptr] = read128varint(in,ptr);
+				[value,ptr] = read128varint(in,ptr);
 				
 			%bytes
 			case 2
 				%read length
-				[length ptr] = read128varint(in,ptr);
+				[length,ptr] = read128varint(in,ptr);
                 %read bytes[length]
 				value=in(ptr:(ptr+length-1));
                 
@@ -49,10 +49,16 @@ function [ datum ] = readdatum( in )
 				value=uint32(in(ptr:(ptr+3)));
                 ptr=ptr+4;
 				value = typecast( ...
-                            value(1) + ...
-                            bitshift(value(2),8) + ...
-                            bitshift(value(3),16) + ...
-                            bitshift(value(4),24) , ...
+                            bitor(  ...
+                                bitor( ...
+                                    value(1) , ...
+                                    bitshift(value(2),8) ...
+                                ), ...
+                                bitor( ...
+                                    bitshift(value(3),16) , ...
+                                    bitshift(value(4),24) ...
+                                )   ...
+                            ) , ...
                             'single');
                 
             otherwise
@@ -118,12 +124,12 @@ function [ value,ptr ] = read128varint( in,ptr )
         
         % if the most significant digit(msd)=0, return the number
         if ii<BASE
-            value=bitshift(ii,shift)+value;
+            value=bitor(bitshift(ii,shift),value);
             return
         
         % if msd=1, continue reading
         else
-            value=bitshift(bitand(ii,BASEMASK),shift)+value;
+            value=bitor(bitshift(bitand(ii,BASEMASK),shift),value);
             shift=shift+BASE_POWER;
             
         end
